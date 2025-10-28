@@ -6,6 +6,7 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.llms import LLM
+from llama_index.core.llms.llm import LLMResponse
 from typing import Any, Generator
 from pydantic import Field
 
@@ -42,17 +43,19 @@ class HFCloudLLM(LLM):
             context_window = 2048
             num_output = 256
             model_name = self.model_name
-            is_chat_model = False  # ← FIXED
+            is_chat_model = False
         return Metadata()
 
-    def complete(self, prompt: str, **kwargs) -> str:
+    def complete(self, prompt: str, **kwargs) -> LLMResponse:
         payload = {"inputs": prompt, "parameters": {"max_new_tokens": 150}}
         resp = requests.post(self.api_url, headers=self.headers, json=payload)
         if resp.status_code != 200:
-            return f"Error: {resp.text}"
-        return resp.json()[0]["generated_text"]
+            text = f"Error: {resp.text}"
+        else:
+            text = resp.json()[0]["generated_text"]
+        return LLMResponse(text=text)  # ← FIXED
 
-    def stream_complete(self, prompt: str, **kwargs) -> Generator[str, None, None]:
+    def stream_complete(self, prompt: str, **kwargs) -> Generator[LLMResponse, None, None]:
         yield self.complete(prompt, **kwargs)
 
     def chat(self, *a, **k): raise NotImplementedError
