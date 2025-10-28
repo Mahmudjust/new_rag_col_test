@@ -1,9 +1,8 @@
 streamlit
-langchain
-sentence-transformers
+llama-index
+llama-index-embeddings-huggingface
+llama-index-llms-huggingface
 PyPDF2
-faiss-cpu
-transformers
-tqdm
-numpy
 torch
+sentence-transformers
+faiss-cpu
