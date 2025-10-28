@@ -1,10 +1,10 @@
 streamlit
 llama-index
 llama-index-embeddings-huggingface
-llama-index-llms-huggingface
 PyPDF2
 torch
 sentence-transformers
 faiss-cpu
 transformers
+requests
 huggingface_hub
