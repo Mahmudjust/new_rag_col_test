@@ -5,6 +5,5 @@ PyPDF2
 torch
 sentence-transformers
 faiss-cpu
-transformers
 requests
 huggingface_hub
