@@ -3,22 +3,21 @@ import os
 import tempfile
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.llms.huggingface import HuggingFaceLLM
+from llama_index.llms.huggingface import HuggingFaceInferenceAPI  # ← CORRECT IMPORT
 from llama_index.core.node_parser import SentenceSplitter
-from huggingface_hub import login  # ← ADD THIS
 
 # === CONFIG ===
 st.set_page_config(page_title="RAG PDF Q&A", layout="centered")
-st.title("RAG PDF Q&A (Cloud-Powered)")
+st.title("RAG PDF Q&A (Free & Cloud)")
 
-EMBED_MODEL = "BAAI/bge-small-en-v1.5"
-GEN_MODEL = "google/flan-t5-small"
+EMBED_MODEL = "BAAI/bge-small-en-v1.5"        # Tiny, runs on Streamlit CPU
+GEN_MODEL = "google/flan-t5-small"           # Runs on HF cloud
 
 # === HUGGING FACE TOKEN ===
 HF_TOKEN = st.secrets.get("HF_TOKEN") or os.getenv("HF_TOKEN")
 
 if not HF_TOKEN:
-    st.error("Set `HF_TOKEN` in Streamlit Secrets (read token from HF).")
+    st.error("Add `HF_TOKEN` in Streamlit Secrets (read token from HF).")
     st.stop()
 
 # === UPLOAD PDF ===
@@ -35,13 +34,11 @@ if uploaded_file:
                 # 1. Embedding (CPU, tiny)
                 embed_model = HuggingFaceEmbedding(model_name=EMBED_MODEL)
 
-                # 2. LLM via Hugging Face Inference API (CLOUD)
-                login(token=HF_TOKEN)  # ← AUTHENTICATE
-                llm = HuggingFaceLLM(
+                # 2. LLM via Hugging Face Inference API (CLOUD, FREE)
+                llm = HuggingFaceInferenceAPI(
                     model_name=GEN_MODEL,
-                    max_new_tokens=150,
-                    generate_kwargs={"do_sample": False},
-                    inference_server_url=f"https://api-inference.huggingface.co/models/{GEN_MODEL}"
+                    token=HF_TOKEN,
+                    max_new_tokens=150
                 )
 
                 # 3. Settings
