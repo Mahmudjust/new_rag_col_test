@@ -6,12 +6,12 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.llms import LLM
-from llama_index.core.llms.llm import LLMResponse
+from llama_index.core.llms.llm import LLMResponse  # Exists in v0.14.6
 from typing import Any, Generator
 from pydantic import Field
 
 st.set_page_config(page_title="RAG PDF Q&A", layout="centered")
-st.title("RAG PDF Q&A (Cloud)")
+st.title("RAG PDF Q&A (Migrated to New HF API)")
 
 HF_TOKEN = st.secrets.get("HF_TOKEN") or os.getenv("HF_TOKEN")
 if not HF_TOKEN:
@@ -28,7 +28,8 @@ class HFCloudLLM(LLM):
     headers: dict = Field(...)
 
     def __init__(self, model_name: str, token: str):
-        api_url = f"https://api-inference.huggingface.co/models/{model_name}"
+        # MIGRATED TO NEW ENDPOINT
+        api_url = f"https://router.huggingface.co/hf-inference/models/{model_name}"
         headers = {"Authorization": f"Bearer {token}"}
         super().__init__(
             model_name=model_name,
@@ -47,13 +48,18 @@ class HFCloudLLM(LLM):
         return Metadata()
 
     def complete(self, prompt: str, **kwargs) -> LLMResponse:
-        payload = {"inputs": prompt, "parameters": {"max_new_tokens": 150}}
+        payload = {"inputs": prompt, "parameters": {"max_new_tokens": 150, "do_sample": False}}
         resp = requests.post(self.api_url, headers=self.headers, json=payload)
         if resp.status_code != 200:
-            text = f"Error: {resp.text}"
+            text = f"HF API Error ({resp.status_code}): {resp.text}"
         else:
-            text = resp.json()[0]["generated_text"]
-        return LLMResponse(text=text)  # ← FIXED
+            try:
+                # Handle JSON properly
+                result = resp.json()
+                text = result[0]["generated_text"] if isinstance(result, list) else str(result)
+            except:
+                text = resp.text  # Fallback
+        return LLMResponse(text=text)
 
     def stream_complete(self, prompt: str, **kwargs) -> Generator[LLMResponse, None, None]:
         yield self.complete(prompt, **kwargs)
