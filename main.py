@@ -6,12 +6,12 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.llms import LLM
-from llama_index.core.llms.llm import LLMResponse  # Exists in v0.14.6
+from llama_index.core.base.llms.types import LLMResponse  # ← CORRECT IMPORT
 from typing import Any, Generator
 from pydantic import Field
 
 st.set_page_config(page_title="RAG PDF Q&A", layout="centered")
-st.title("RAG PDF Q&A (Migrated to New HF API)")
+st.title("RAG PDF Q&A (Cloud)")
 
 HF_TOKEN = st.secrets.get("HF_TOKEN") or os.getenv("HF_TOKEN")
 if not HF_TOKEN:
@@ -28,8 +28,7 @@ class HFCloudLLM(LLM):
     headers: dict = Field(...)
 
     def __init__(self, model_name: str, token: str):
-        # MIGRATED TO NEW ENDPOINT
-        api_url = f"https://router.huggingface.co/hf-inference/models/{model_name}"
+        api_url = f"https://router.huggingface.co/hf-inference/models/{model_name}"  # New endpoint
         headers = {"Authorization": f"Bearer {token}"}
         super().__init__(
             model_name=model_name,
@@ -54,11 +53,10 @@ class HFCloudLLM(LLM):
             text = f"HF API Error ({resp.status_code}): {resp.text}"
         else:
             try:
-                # Handle JSON properly
                 result = resp.json()
                 text = result[0]["generated_text"] if isinstance(result, list) else str(result)
             except:
-                text = resp.text  # Fallback
+                text = resp.text
         return LLMResponse(text=text)
 
     def stream_complete(self, prompt: str, **kwargs) -> Generator[LLMResponse, None, None]:
