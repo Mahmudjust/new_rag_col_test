@@ -7,3 +7,4 @@ PyPDF2==3.0.1
 tqdm==4.67.1
 numpy==2.3.4
 google-colab==2.0.0  # optional if using Colab features
+pip install --upgrade pip
