@@ -5,6 +5,7 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.huggingface import HuggingFaceLLM
 from llama_index.core.node_parser import SentenceSplitter
+from huggingface_hub import login  # ← ADD THIS
 
 # === CONFIG ===
 st.set_page_config(page_title="RAG PDF Q&A", layout="centered")
@@ -34,13 +35,12 @@ if uploaded_file:
                 # 1. Embedding (CPU, tiny)
                 embed_model = HuggingFaceEmbedding(model_name=EMBED_MODEL)
 
-                # 2. LLM via Hugging Face Inference Endpoint (CLOUD)
+                # 2. LLM via Hugging Face Inference API (CLOUD)
+                login(token=HF_TOKEN)  # ← AUTHENTICATE
                 llm = HuggingFaceLLM(
                     model_name=GEN_MODEL,
-                    token=HF_TOKEN,
                     max_new_tokens=150,
                     generate_kwargs={"do_sample": False},
-                    # This uses HF's free inference server
                     inference_server_url=f"https://api-inference.huggingface.co/models/{GEN_MODEL}"
                 )
 
