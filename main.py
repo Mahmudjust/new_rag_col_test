@@ -1,9 +1,9 @@
 import streamlit as st
 import PyPDF2
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.huggingface import HuggingFaceLLM
-from llama_index.core import Settings
+from llama_index.core.node_parser import SentenceSplitter
 import torch
 import os
 import tempfile
@@ -24,20 +24,28 @@ if uploaded_file:
 
         if "index" not in st.session_state:
             with st.spinner("Loading models & building index..."):
+                # --- Embedding Model ---
                 embed_model = HuggingFaceEmbedding(model_name=EMBED_MODEL)
 
+                # --- LLM (Fixed: No 'device' arg) ---
                 llm = HuggingFaceLLM(
                     model_name=GEN_MODEL,
                     tokenizer_name=GEN_MODEL,
-                    device="cuda" if torch.cuda.is_available() else "cpu",
-                    model_kwargs={"torch_dtype": torch.float16 if torch.cuda.is_available() else torch.float32},
+                    context_window=2048,
+                    max_new_tokens=150,
+                    model_kwargs={
+                        "torch_dtype": torch.float16 if torch.cuda.is_available() else torch.float32,
+                        # Let HuggingFace auto-detect device
+                    },
+                    generate_kwargs={"do_sample": False},
                 )
 
+                # --- Settings ---
                 Settings.embed_model = embed_model
                 Settings.llm = llm
-                Settings.chunk_size = 500
-                Settings.chunk_overlap = 100
+                Settings.node_parser = SentenceSplitter(chunk_size=500, chunk_overlap=100)
 
+                # --- Load & Index ---
                 reader = SimpleDirectoryReader(input_files=[pdf_path])
                 documents = reader.load_data()
                 index = VectorStoreIndex.from_documents(documents, show_progress=True)
@@ -47,8 +55,9 @@ if uploaded_file:
                     similarity_top_k=4,
                     response_mode="compact"
                 )
-            st.success("Index ready!")
+            st.success("Index ready! Ask your question.")
 
+        # --- Q&A ---
         question = st.text_input("Enter your question:")
         if question:
             with st.spinner("Thinking..."):
