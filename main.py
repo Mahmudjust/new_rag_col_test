@@ -42,6 +42,7 @@ class HFCloudLLM(LLM):
             context_window = 2048
             num_output = 256
             model_name = self.model_name
+            is_chat_model = False  # ← FIXED
         return Metadata()
 
     def complete(self, prompt: str, **kwargs) -> str:
