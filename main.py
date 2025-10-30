@@ -10,8 +10,8 @@ from llama_index.core.llms import CompletionResponse  # ← CORRECT FOR v0.14.6
 from typing import Any, Generator
 from pydantic import Field
 
-st.set_page_config(page_title="RAG Cyber Q&A", layout="centered")
-st.title("RAG Cyber Q&A (Cloud)")
+st.set_page_config(page_title="RAG Q&A", layout="centered")
+st.title("RAG Q&A (Cloud)")
 
 HF_TOKEN = st.secrets.get("HF_TOKEN") or os.getenv("HF_TOKEN")
 if not HF_TOKEN:
@@ -95,4 +95,5 @@ if uploaded_file:
             st.write("**Sources:**")
             for i, n in enumerate(r.source_nodes):
                 st.write(f"[{i+1}] {n.node.text[:300]}...")
+
 
