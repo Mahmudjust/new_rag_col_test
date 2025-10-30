@@ -6,7 +6,7 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.llms import LLM
-from llama_index.core.base.llms.types import LLMResponse  # ← CORRECT IMPORT
+from llama_index.core.llms import CompletionResponse  # ← CORRECT FOR v0.14.6
 from typing import Any, Generator
 from pydantic import Field
 
@@ -28,7 +28,7 @@ class HFCloudLLM(LLM):
     headers: dict = Field(...)
 
     def __init__(self, model_name: str, token: str):
-        api_url = f"https://router.huggingface.co/hf-inference/models/{model_name}"  # New endpoint
+        api_url = f"https://router.huggingface.co/hf-inference/models/{model_name}"
         headers = {"Authorization": f"Bearer {token}"}
         super().__init__(
             model_name=model_name,
@@ -46,20 +46,19 @@ class HFCloudLLM(LLM):
             is_chat_model = False
         return Metadata()
 
-    def complete(self, prompt: str, **kwargs) -> LLMResponse:
-        payload = {"inputs": prompt, "parameters": {"max_new_tokens": 150, "do_sample": False}}
+    def complete(self, prompt: str, **kwargs) -> CompletionResponse:
+        payload = {"inputs": prompt, "parameters": {"max_new_tokens": 150}}
         resp = requests.post(self.api_url, headers=self.headers, json=payload)
         if resp.status_code != 200:
-            text = f"HF API Error ({resp.status_code}): {resp.text}"
+            text = f"Error: {resp.text}"
         else:
             try:
-                result = resp.json()
-                text = result[0]["generated_text"] if isinstance(result, list) else str(result)
+                text = resp.json()[0]["generated_text"]
             except:
                 text = resp.text
-        return LLMResponse(text=text)
+        return CompletionResponse(text=text)
 
-    def stream_complete(self, prompt: str, **kwargs) -> Generator[LLMResponse, None, None]:
+    def stream_complete(self, prompt: str, **kwargs) -> Generator[CompletionResponse, None, None]:
         yield self.complete(prompt, **kwargs)
 
     def chat(self, *a, **k): raise NotImplementedError
